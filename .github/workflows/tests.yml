@@ -23,6 +23,18 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --no-interaction --prefer-dist
 
+      # ✅ ADD THIS (NODE + VITE)
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install Node dependencies
+        run: npm install
+
+      - name: Build frontend (Vite)
+        run: npm run build
+
       - name: Copy .env
         run: cp .env.example .env
 
@@ -42,5 +54,6 @@ jobs:
       - name: Run migrations
         run: php artisan migrate:fresh --force
 
+      # ✅ FIXED NAME
       - name: Run tests
         run: php artisan test
