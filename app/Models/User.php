@@ -4,39 +4,50 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use App\Models\Report;
+use Illuminate\Notifications\DatabaseNotification;
+use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
-    use HasFactory;
+    use HasFactory, Notifiable;
 
     protected $fillable = [
         'name',
-        'email',  
+        'email',
         'username',
         'password',
         'role',
     ];
 
-    protected $hidden = [
-        'password',
-    ];
+    protected $hidden = ['password'];
 
     protected function casts(): array
     {
-        return [
-            'password' => 'hashed',
-        ];
+        return ['password' => 'hashed'];
+    }
+
+    // Override to use user_notifications table instead of notifications
+    public function databaseNotificationModel(): string
+    {
+        return UserNotification::class;
+    }
+
+    public function notifications()
+    {
+        return $this->morphMany(UserNotification::class, 'notifiable')
+                    ->orderBy('created_at', 'desc');
+    }
+
+    public function unreadNotifications()
+    {
+        return $this->morphMany(UserNotification::class, 'notifiable')
+                    ->whereNull('read_at')
+                    ->orderBy('created_at', 'desc');
     }
 
     public function reports()
     {
         return $this->hasMany(Report::class);
-    }
-
-    public function notifications()
-    {
-        return $this->hasMany(Notification::class);
     }
 
     public function isAdmin(): bool

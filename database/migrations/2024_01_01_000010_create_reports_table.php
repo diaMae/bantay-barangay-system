@@ -13,11 +13,11 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('title');
             $table->text('description');
-            $table->string('image_url')->nullable();
+            $table->string('category');
+            $table->string('image')->nullable();
             $table->decimal('latitude', 10, 7)->nullable();
             $table->decimal('longitude', 10, 7)->nullable();
-            $table->string('category');
-            $table->enum('status', ['Pending', 'In Progress', 'Resolved'])->default('Pending');
+            $table->enum('status', ['pending', 'in_progress', 'resolved'])->default('pending');
             $table->text('admin_notes')->nullable();
             $table->timestamps();
         });
