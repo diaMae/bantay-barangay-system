@@ -19,8 +19,12 @@ class StatusUpdatedNotification extends Notification
         $status = ucfirst(str_replace('_', ' ', $this->report->status));
 
         return [
-            'report_id' => $this->report->id,
-            'message'   => "Your report \"{$this->report->title}\" status has been updated to: {$status}.",
+            'report_id'   => $this->report->id,
+            'title'       => $this->report->title,
+            'status'      => $this->report->status,
+            'admin_notes' => $this->report->admin_notes,
+            'message'     => "Your report \"{$this->report->title}\" has been updated to: {$status}.",
+            'url'         => route('reports.show', $this->report->id),
         ];
     }
 }

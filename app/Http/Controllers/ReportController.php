@@ -24,15 +24,21 @@ class ReportController extends Controller
             $inProgress    = Report::where('status', 'in_progress')->count();
             $resolved      = Report::where('status', 'resolved')->count();
             $recentReports = Report::with('user')->latest()->take(5)->get();
+            $mapReports    = Report::whereNotNull('latitude')->whereNotNull('longitude')
+                                ->select('id', 'title', 'category', 'description', 'latitude', 'longitude', 'status')
+                                ->get();
         } else {
             $totalReports  = $user->reports()->count();
             $pending       = $user->reports()->where('status', 'pending')->count();
             $inProgress    = $user->reports()->where('status', 'in_progress')->count();
             $resolved      = $user->reports()->where('status', 'resolved')->count();
             $recentReports = $user->reports()->latest()->take(5)->get();
+            $mapReports    = $user->reports()->whereNotNull('latitude')->whereNotNull('longitude')
+                                ->select('id', 'title', 'category', 'description', 'latitude', 'longitude', 'status')
+                                ->get();
         }
 
-        return view('dashboard', compact('totalReports', 'pending', 'inProgress', 'resolved', 'recentReports'));
+        return view('dashboard', compact('totalReports', 'pending', 'inProgress', 'resolved', 'recentReports', 'mapReports'));
     }
 
     // ─── Reports list ─────────────────────────────────────────────────────────
@@ -49,16 +55,18 @@ class ReportController extends Controller
     // ─── Create form ──────────────────────────────────────────────────────────
     public function create()
     {
+        abort_unless(auth()->user()->role === 'resident', 403);
         return view('reports.create');
     }
 
     // ─── Store new report ─────────────────────────────────────────────────────
     public function store(Request $request)
     {
+        abort_unless(auth()->user()->role === 'resident', 403);
         $request->validate([
             'title'       => ['required', 'string', 'max:255'],
             'description' => ['required', 'string'],
-            'category'    => ['required', 'string'],
+            'category'    => ['required', 'string', 'in:' . implode(',', \App\Models\Report::CATEGORIES)],
             'image'       => ['nullable', 'image', 'max:2048'],
             'latitude'    => ['nullable', 'numeric'],
             'longitude'   => ['nullable', 'numeric'],
@@ -106,11 +114,14 @@ class ReportController extends Controller
         abort_unless(auth()->user()->isAdmin(), 403);
 
         $request->validate([
-            'status' => ['required', 'in:pending,in_progress,resolved'],
+            'status'      => ['required', 'in:pending,in_progress,resolved'],
+            'admin_notes' => ['nullable', 'string'],
         ]);
 
         $report = Report::findOrFail($id);
-        $report->update(['status' => $request->status]);
+        $report->status      = $request->status;
+        $report->admin_notes = $request->admin_notes;
+        $report->save();
 
         // 🔔 Trigger internal webhook directly (avoid HTTP self-call timeout)
         $this->webhookNotify(new Request([
@@ -118,7 +129,7 @@ class ReportController extends Controller
             'report_id' => $report->id,
         ]));
 
-        return back()->with('success', 'Status updated.');
+        return back()->with('success', 'Report updated successfully.');
     }
 
     // ─── Internal webhook handler ─────────────────────────────────────────────

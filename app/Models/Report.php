@@ -17,6 +17,15 @@ class Report extends Model
         'status',
     ];
 
+    // Single source of truth for categories — used in Blade and validation
+    const CATEGORIES = [
+        'Public Safety',
+        'Noise Complaint',
+        'Road Issue',
+        'Environmental',
+        'Other',
+    ];
+
     public function user()
     {
         return $this->belongsTo(User::class);
